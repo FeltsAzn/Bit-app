@@ -1,14 +1,14 @@
 import datetime
 import config
-from pydantic_models import User, Wallet, Transaction, UserUpdate, UserCreate
+import schemas
 import bit
 from database.db import *
 
 
 @db_session
-def create_wallet(user: User = None, private_key: str = None, testnet: bool = False) -> Wallet:
+def create_wallet(user: schemas.User = None, private_key: str = None, testnet: bool = False) -> Wallet:
     if testnet:
-        raw_wallet = bit.PrivateKeyTestnet if private_key is None else bit.PrivateKeyTestnet(private_key)
+        raw_wallet = bit.PrivateKeyTestnet() if private_key is None else bit.PrivateKeyTestnet(private_key)
     else:
         raw_wallet = bit.Key() if private_key is None else bit.Key(private_key)
     if user is None:
@@ -20,7 +20,9 @@ def create_wallet(user: User = None, private_key: str = None, testnet: bool = Fa
 
 
 @db_session
-def create_user(tg_id: int, nickname: str = None) -> User:
+def create_user(user: schemas.UserCreate) -> User:
+    tg_id: int = user.tg_id
+    nickname: str | None = user.nickname
     if nickname is None:
         user = User(tg_id=tg_id, wallet=create_wallet())
     else:
@@ -30,21 +32,22 @@ def create_user(tg_id: int, nickname: str = None) -> User:
 
 @db_session
 def create_transaction(
-        sender: User,
+        sender_id: int,
         amount_btc_without_fee: float,
         receiver_address: str,
         fee: float | None,
         testnet: bool = False
 ) -> Transaction | str:
+    sender = get_user(sender_id)
     wallet_sender = bit.PrivateKeyTestnet(sender.wallet.private_key) if testnet else bit.Key(sender.wallet.private_key)
     sender.wallet.balance = wallet_sender.get_balance()
-    if fee is not None:
+    if fee is None:
         fee = bit.network.fees.get_fee() * 1000
     amount_btc_with_fee = amount_btc_without_fee + fee
     if amount_btc_with_fee >= sender.wallet.balance:
         return f'Too low balance {sender.wallet.balance}'
 
-    output = [(receiver_address, amount_btc_without_fee, 'satishi')]
+    output = [(receiver_address, amount_btc_without_fee, 'satoshi')]
 
     tx_hash = wallet_sender.send(output, fee, absolute_fee=True)
 
@@ -56,14 +59,13 @@ def create_transaction(
         receiver_address=receiver_address,
         amount_btc_with_fee=amount_btc_with_fee,
         amount_btc_without_fee=amount_btc_without_fee,
-        date_of_transaction=datetime.now(),
         tx_hash=tx_hash
     )
     return transaction
 
 
 @db_session
-def update_user(user: UserUpdate) -> User:
+def update_user(user: schemas.UserUpdate) -> User:
     user_to_update = User[user.id]
     if user.tg_id:
         user_to_update.tg_id = user.tg_id
@@ -77,7 +79,7 @@ def update_user(user: UserUpdate) -> User:
 
 
 @db_session
-def update_wallet_balance(wallet: Wallet) -> Wallet:
+def update_wallet_balance(wallet: schemas.Wallet) -> Wallet:
     # проверяем в не в тестовой сети ли мы
     testnet = True if wallet.private_key.startswith('c') else False
     # получаем объект из Bit, для работы с биткоинами
@@ -88,12 +90,13 @@ def update_wallet_balance(wallet: Wallet) -> Wallet:
 
 
 @db_session
-def update_all_balance():
+def update_all_balance() -> float:
+    all_balance = 0
     # с помощью генераторного выражения выбираем все кошельки, с помощью функции select()
     for wallet in select(w for w in Wallet)[:]:
         update_wallet_balance(wallet)
-        print(wallet.address, wallet.balance)
-    return True
+        all_balance += wallet.balance
+    return all_balance
 
 
 @db_session
@@ -102,11 +105,25 @@ def get_user(user_id: int) -> User:
 
 
 @db_session
-def get_user_by_tg_id(tg_id: int) -> User:
+def get_all_user() -> list[dict]:
+    all_users = []
+    for user in User.select()[:]:
+        all_users.append(user.to_dict())
+    return all_users
+
+
+@db_session
+def get_user_by_tg(tg_id: int) -> User:
     return User.select(lambda u: u.tg_id == tg_id).first()
 
 
-def get_transaction_info(transaction: Transaction) -> dict:
+@db_session
+def get_user_balance(user_id: int) -> float:
+    user_wallet = update_wallet_balance(User[user_id].wallet)
+    return user_wallet.balance
+
+
+def get_transaction_info(transaction: schemas.Transaction) -> dict:
     return {"id": transaction.id,
             "sender": transaction.sender if transaction.sender else None,
             "receiver": transaction.receiver if transaction.receiver else None,
@@ -122,7 +139,7 @@ def get_transaction_info(transaction: Transaction) -> dict:
 
 
 @db_session
-def get_wallet_info(wallet: Wallet) -> dict:
+def get_wallet_info(wallet: schemas.Wallet) -> dict:
     wallet = update_wallet_balance(wallet)
     return {"id": wallet.id if wallet.id else None,
             "user": wallet.user if wallet.user else None,

@@ -11,6 +11,9 @@ class User(BaseModel):
     sended_transactions: list['Transaction'] = None
     received_transactions: list['Transaction'] = None
 
+    class Config:
+        orm_mode = True
+
 
 class Transaction(BaseModel):
     id: int
@@ -50,6 +53,12 @@ class UserCreate(BaseModel):
     nickname: str = None
 
 
+class CreateTransaction(BaseModel):
+    sender_id: int
+    receiver_address: str
+    amount_btc_without_fee: float
+    fee: float = None
+    testnet: bool = False
 
 
 
