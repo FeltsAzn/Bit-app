@@ -1,8 +1,6 @@
-import datetime
-import config
-import schemas
+from fastapi_app import schemas
 import bit
-from database.db import *
+from fastapi_app.database.db import *
 
 
 @db_session

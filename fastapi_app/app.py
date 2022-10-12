@@ -1,8 +1,7 @@
 # from database.models import *
-from database import crud
+from fastapi_app.database import crud
 import schemas
-import config
-from fastapi import FastAPI, Query, Body, Path
+from fastapi import FastAPI, Body, Path
 
 api = FastAPI()
 

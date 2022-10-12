@@ -1,4 +1,4 @@
-from database.models import *
+from fastapi_app.database.models import *
 
 
 try:
