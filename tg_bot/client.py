@@ -19,14 +19,15 @@ def get_user_by_tg(tg_id: int):
     return requests.get(f'{API_URL}/get_user_by_tg/{tg_id}').json()
 
 
-def create_user(user: schemas.UserCreate):
+def create_user(user: dict):
     """
     Создаем Юзера
     :param user:
     :return:
     """
     user = schemas.UserCreate.validate(user)
-    return requests.post(f'{API_URL}/user/create', data=user.json()).json()
+    resp = requests.post(f'{API_URL}/user/create', data=user.json())
+    return resp
 
 
 def create_transaction(transaction_info: schemas.CreateTransaction):
@@ -47,12 +48,10 @@ def delete_user(user_id: int):
     return requests.delete(f'{API_URL}/user/{user_id}').json()
 
 
-def get_user_balance(user_id: int):
-    return requests.get(f"{API_URL}/get_user_balance/{user_id}").json()
+def get_user_balance(tg_id: int):
+    return requests.get(f"{API_URL}/get_user_balance/{tg_id}").json()
 
 
 def total_balance():
     return requests.get(f"{API_URL}/get_total_balance").json()
-
-def g
 

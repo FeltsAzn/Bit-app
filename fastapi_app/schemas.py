@@ -54,7 +54,7 @@ class UserCreate(BaseModel):
 
 
 class CreateTransaction(BaseModel):
-    sender_id: int
+    sender_tg_id: int
     receiver_address: str
     amount_btc_without_fee: float
     fee: float = None
