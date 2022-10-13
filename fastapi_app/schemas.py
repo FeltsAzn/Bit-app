@@ -61,4 +61,6 @@ class CreateTransaction(BaseModel):
     testnet: bool = False
 
 
+UserUpdate.update_forward_refs()
+
 

@@ -1,6 +1,6 @@
 # from database.models import *
 from fastapi_app.database import crud
-import schemas
+from fastapi_app import schemas
 from fastapi import FastAPI, Body, Path
 
 api = FastAPI()
@@ -34,7 +34,10 @@ def user_create(user: schemas.UserCreate = Body()):
 
 @api.put("/user/{user_id}")
 def update_user(user: schemas.UserUpdate = Body()):
-    """Обновление информации по пользователю"""
+    """
+    Обновление информации по пользователю
+    :param user
+    """
     return {"updated_user": crud.update_user(user).to_dict()}
 
 
@@ -62,7 +65,7 @@ def get_total_balance():
     """
     Получение общего баланса всех кошельков
     """
-    balance = crud.update_all_balance()
+    balance = crud.get_all_balance()
     return {"total_balance": balance}
 
 
@@ -80,8 +83,8 @@ def create_transaction(trans_details: schemas.CreateTransaction):
     return {"response": transaction.to_dict()}
 
 
-@api.get("/user/{user_id}")
-def read_user(user_id: str, query: str | None = None):
-    if query:
-        return {"item_id": user_id, "query": query}
-    return {"item_id": user_id}
+# @api.get("/user/{user_id}")
+# def read_user(user_id: str, query: str | None = None):
+#     if query:
+#         return {"item_id": user_id, "query": query}
+#     return {"item_id": user_id}

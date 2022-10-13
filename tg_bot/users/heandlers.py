@@ -43,7 +43,7 @@ def history(message):
     bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-@bot.message_handler(regexp='Меню')
+@bot.message_handler(func=lambda message: message.text == 'Меню' or message.text == "Закрыть админ-панель")
 def start_message(message):
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt1 = telebot.types.KeyboardButton("Кошелек")

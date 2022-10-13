@@ -129,22 +129,6 @@ def get_user_balance(user_id: int) -> float:
     return user_wallet.balance
 
 
-def get_transaction_info(transaction: schemas.Transaction) -> dict:
-    """Возвращается словарь с информацией по транзакции (для пользователей)"""
-    return {"id": transaction.id,
-            "sender": transaction.sender if transaction.sender else None,
-            "receiver": transaction.receiver if transaction.receiver else None,
-            "sender_wallet": transaction.sender_wallet if transaction.sender_wallet else None,
-            "receiver_wallet": transaction.receiver_wallet if transaction.receiver_wallet else None,
-            "sender_address": transaction.sender_address,
-            "receiver_address": transaction.receiver_address,
-            "amount_btc_with_fee": transaction.amount_btc_with_fee,
-            "amount_btc_without_fee": transaction.amount_btc_without_fee,
-            "fee": transaction.fee,
-            "date_of_transaction": transaction.date_of_transaction,
-            "tx_hash": transaction.tx_hash}
-
-
 @db_session
 def get_wallet_info(wallet: schemas.Wallet) -> dict:
     """Возвращается словарь с информацией по кошельку для передачи в информацию по пользователю"""
