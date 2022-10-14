@@ -2,6 +2,7 @@ from http.client import HTTPException
 import telebot
 from tg_bot.start_bot import bot
 from .. import client
+from tg_bot.users.fsm_transaction import *
 
 
 def connection_checker(response):
@@ -23,26 +24,47 @@ def start_message(message):
     bnt1 = telebot.types.KeyboardButton("Да, создать кошелек")
     btn2 = telebot.types.KeyboardButton("Нет, у меня уже есть кошелек")
     markup.add(bnt1, btn2)
-    text = f'Привет, {message.from_user.full_name}, я крипто-кошелёк!\n' \
+    text = f'Привет, {message.from_user.full_name}, я крипто-кошелек!\n' \
            f'Через меня во можете хранить и отправлять криптовалюту.\n' \
            f'Хотите открыть кошелек?'
     bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: message.text == "Попробовать обратиться снова")
+@bot.message_handler(
+    func=lambda message: message.text == 'Меню'
+    or message.text == "Закрыть админ-панель"
+    or message.text == "Открыть кошелек"
+    or message.text == "Отмена создания транзакции"
+)
+def menu(message):
+    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    bnt1 = telebot.types.KeyboardButton("Кошелек")
+    btn2 = telebot.types.KeyboardButton("Перевести")
+    btn3 = telebot.types.KeyboardButton("История")
+    markup.add(bnt1, btn2, btn3)
+    text = 'Выберите действие' if message.text != "Открыть кошелек" else 'Возвращение в меню'
+    bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+
+
+@bot.message_handler(
+    func=lambda message: message.text == "Попробовать обратиться снова"
+)
 def second_try(message):
+    """Обработка повторной попытки получения нового кошелька или старого кошелька"""
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt1 = telebot.types.KeyboardButton("Да, создать кошелек")
     btn2 = telebot.types.KeyboardButton("Нет, у меня уже есть кошелек")
     markup.add(bnt1, btn2)
-    text = f'Привет, {message.from_user.full_name}, я крипто-кошелёк!\n' \
+    text = f'Привет, {message.from_user.full_name}, я крипто-кошелек!\n' \
            f'Попробуем снова?\n' \
            f'Хотите открыть кошелек?'
     bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
 @bot.message_handler(
-    func=lambda message: message.text == 'Да, создать кошелек' or message.text == 'Попробовать создать кошелек')
+    func=lambda message: message.text == 'Да, создать кошелек'
+    or message.text == 'Попробовать создать кошелек'
+)
 def create_user(message):
     """Обработка пользователя, который хочет создать новый кошелек"""
     try:
@@ -86,7 +108,8 @@ def create_user(message):
 
 @bot.message_handler(
     func=lambda message: message.text == "Нет, у меня уже есть кошелек"
-    or message.text == 'Найти мой кошелек')
+    or message.text == 'Найти мой кошелек'
+)
 def check_user(message):
     """Обработка пользователя, который хочет найти уже созданный кошелек"""
     try:
@@ -125,19 +148,6 @@ def check_user(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: message.text == 'Меню'
-                     or message.text == "Закрыть админ-панель"
-                     or message.text == "Открыть кошелек")
-def menu(message):
-    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    bnt1 = telebot.types.KeyboardButton("Кошелек")
-    btn2 = telebot.types.KeyboardButton("Перевести")
-    btn3 = telebot.types.KeyboardButton("История")
-    markup.add(bnt1, btn2, btn3)
-    text = 'Выберите действие' if message.text != "Открыть кошелек" else 'Возвращение в меню'
-    bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-
-
 @bot.message_handler(regexp='Кошелек')
 def wallet(message):
     bot.send_message(chat_id=message.chat.id, text="Подождите...")
@@ -169,15 +179,15 @@ def wallet(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: message.text == 'Перевести'
-                     or message.text == "Создать транзакцию")
-def transaction(message):
-    # TODO привязать к БД
-    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    bnt1 = telebot.types.KeyboardButton("Меню")
-    markup.add(bnt1)
-    text = f'Введите адрес кошелька куда хотите перевести: '
-    bot.send_message(message.chat.id, text, reply_markup=markup)
+# @bot.message_handler(
+
+# def transaction(message):
+#     # TODO привязать к БД
+#     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+#     bnt1 = telebot.types.KeyboardButton()
+#     markup.add(bnt1)
+#     text = f'Введите адрес кошелька куда хотите перевести: '
+#     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 
 @bot.message_handler(regexp='История')
@@ -219,6 +229,3 @@ def history(message):
         markup.add(bnt)
         text = f'Ваши транзакции: {transactions["transactions"]}'
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-
-
-

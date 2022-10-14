@@ -1,4 +1,3 @@
-from http.client import HTTPException
 from tg_bot.config import API_URL
 import requests
 from fastapi_app import schemas
@@ -6,17 +5,22 @@ from fastapi_app import schemas
 
 def get_users():
     """
-    Получаем всех юзеров
-    :return list:
+    Получаем всех юзеров (для админов)
+    :return server response(list):
     """
     try:
         response = requests.get(f"{API_URL}/users").json()
-    except requests.exceptions.ConnectionError  as _ex:
+    except requests.exceptions.ConnectionError as _ex:
         raise _ex
     return response
 
 
 def get_info_about_user(user_id: int):
+    """
+    Получение информации о пользователе (для админа)
+    :param user_id:
+    :return server response(dict):
+    """
     try:
         response = requests.get(f'{API_URL}/get_info_by_user/{user_id}').json()
     except requests.exceptions.ConnectionError as _ex:
@@ -25,6 +29,11 @@ def get_info_about_user(user_id: int):
 
 
 def get_user_by_tg(tg_id: int):
+    """
+    Получение информации о пользователе (для админа)
+    :param tg_id:
+    :return server response(dict):
+    """
     try:
         response = requests.get(f'{API_URL}/get_user_by_tg/{tg_id}').json()
     except requests.exceptions.ConnectionError as _ex:
@@ -34,9 +43,9 @@ def get_user_by_tg(tg_id: int):
 
 def create_user(user: dict):
     """
-    Создаем Юзера
+    Создание пользователя
     :param user:
-    :return:
+    :return server response(dict):
     """
     user = schemas.UserCreate.validate(user)
     try:
@@ -46,16 +55,12 @@ def create_user(user: dict):
     return response
 
 
-def create_transaction(transaction_info: schemas.CreateTransaction) -> dict:
-    try:
-        transaction_info = schemas.CreateTransaction.validate(transaction_info)
-        response = requests.post(f'{API_URL}/create_transaction', data=transaction_info.json()).json()
-    except requests.exceptions.ConnectionError as _ex:
-        return {"server_error": "the server is not responding"}
-    return response
-
-
 def update_user(user: schemas.UserUpdate) -> str | dict:
+    """
+    Обновление информации пользователя (для админа)
+    :param user:
+    :return server response(dict | str) :
+    """
     try:
         user = schemas.UserUpdate.validate(user)
         response = requests.put(f'{API_URL}/user/{user.id}', data=user.json())
@@ -69,6 +74,11 @@ def update_user(user: schemas.UserUpdate) -> str | dict:
 
 
 def delete_user(user_id: int) -> dict:
+    """
+    Удаление пользователя (для админа)
+    :param user_id:
+    :return server response(dict):
+    """
     try:
         response = requests.delete(f'{API_URL}/user/{user_id}').json()
     except requests.exceptions.ConnectionError as _ex:
@@ -77,6 +87,11 @@ def delete_user(user_id: int) -> dict:
 
 
 def get_user_balance(tg_id: int) -> dict:
+    """
+    Получение баланса пользователя
+    :param tg_id:
+    :return server response(dict):
+    """
     try:
         response = requests.get(f"{API_URL}/get_user_balance/{tg_id}").json()
     except requests.exceptions.ConnectionError as _ex:
@@ -85,6 +100,10 @@ def get_user_balance(tg_id: int) -> dict:
 
 
 def total_balance() -> dict:
+    """
+    Получение общего баланса пользователей (для админа)
+    :return server response(dict):
+    """
     try:
         response = requests.get(f"{API_URL}/get_total_balance").json()
     except requests.exceptions.ConnectionError as _ex:
@@ -92,7 +111,26 @@ def total_balance() -> dict:
     return response
 
 
+def create_transaction(transaction_info: schemas.CreateTransaction) -> dict:
+    """
+    Создание транзакцию
+    :param transaction_info:
+    :return server response(dict):
+    """
+    try:
+        transaction_info = schemas.CreateTransaction.validate(transaction_info)
+        response = requests.post(f'{API_URL}/create_transaction', data=transaction_info.json()).json()
+    except requests.exceptions.ConnectionError as _ex:
+        return {"server_error": "the server is not responding"}
+    return response
+
+
 def get_user_transactions(tg_id: int):
+    """
+    Получение общего баланса пользователей (для админа)
+    :param tg_id:
+    :return server response(dict):
+    """
     try:
         response = requests.get(f"{API_URL}/get_user_transactions/{tg_id}").json()
     except requests.exceptions.ConnectionError as _ex:

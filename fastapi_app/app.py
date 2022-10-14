@@ -127,7 +127,7 @@ def create_transaction(trans_details: schemas.CreateTransaction) -> dict:
 
 
 @api.get("/get_user_transactions/{tg_id}")
-def get_transactions_by_tg_id(tg_id: int = Path()):
+def get_transactions_by_tg(tg_id: int = Path()):
     """Получение транзакций пользователя"""
     try:
         transactions = users_crud.get_user_transactions(tg_id=tg_id)
