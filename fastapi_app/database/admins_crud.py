@@ -45,10 +45,11 @@ def get_user(user_id: int) -> User:
     """Возвращается экземпляр pony.orm.User"""
     return User[user_id]
 
+
 @db_session
 def get_user_by_tg(tg_id: int) -> User:
     """Возвращается экземпляр pony.orm.User"""
-    return User.select(lambda u: u.tg_id == tg_id).first().to_dict()
+    return User.select(lambda u: u.tg_id == tg_id).first()
 
 
 @db_session
