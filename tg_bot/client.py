@@ -91,3 +91,10 @@ def total_balance() -> dict:
         return {"server_error": "the server is not responding"}
     return response
 
+
+def get_user_transactions(tg_id: int):
+    try:
+        response = requests.get(f"{API_URL}/get_user_transactions/{tg_id}").json()
+    except requests.exceptions.ConnectionError as _ex:
+        return {"server_error": "the server is not responding"}
+    return response

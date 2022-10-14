@@ -74,6 +74,7 @@ def get_user_balance(tg_id: int) -> float:
     return user_wallet.balance
 
 
+@db_session
 def get_transaction_info(transaction: schemas.Transaction) -> dict:
     """Возвращается словарь с информацией по транзакции (для пользователей)"""
     return {"id": transaction.id,
@@ -88,3 +89,13 @@ def get_transaction_info(transaction: schemas.Transaction) -> dict:
             "fee": transaction.fee,
             "date_of_transaction": transaction.date_of_transaction,
             "tx_hash": transaction.tx_hash}
+
+
+@db_session
+def get_user_transactions(tg_id: int) -> list[dict]:
+    user = admins_crud.get_user_by_tg(tg_id)
+    transactions = []
+    for transaction in Transaction.select(lambda tr: user == tr.sender)[:]:
+        transactions.append(transaction.to_dict())
+    return transactions
+

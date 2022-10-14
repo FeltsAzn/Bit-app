@@ -9,7 +9,7 @@ api = FastAPI()
 
 
 @api.get("/users")
-def get_all_users():
+def get_all_users() -> dict:
     """Информация по всем пользователям"""
     try:
         all_users = admins_crud.get_all_user()
@@ -21,7 +21,7 @@ def get_all_users():
 
 
 @api.get('/get_info_by_user/{user_id}')
-def get_info_about_user(user_id: int = Path()):
+def get_info_about_user(user_id: int = Path()) -> dict:
     """Информация по пользователю по его id"""
     try:
         user_id = admins_crud.get_user_info(user_id)
@@ -33,7 +33,7 @@ def get_info_about_user(user_id: int = Path()):
 
 
 @api.get('/get_user_by_tg/{tg_id}')
-def get_user_by_tg(tg_id: int):
+def get_user_by_tg(tg_id: int) -> dict:
     """Информация по пользователю по его tg_id"""
     try:
         user = admins_crud.get_user_by_tg(tg_id)
@@ -47,7 +47,7 @@ def get_user_by_tg(tg_id: int):
 
 
 @api.post("/user/create")
-def user_create(user: schemas.UserCreate = Body()):
+def user_create(user: schemas.UserCreate = Body()) -> dict:
     """Создание нового пользователя"""
     try:
         new_user = users_crud.create_user(user)
@@ -59,7 +59,7 @@ def user_create(user: schemas.UserCreate = Body()):
 
 
 @api.put("/user/{user_id}")
-def update_user(user: schemas.UserUpdate = Body()):
+def update_user(user: schemas.UserUpdate = Body()) -> dict:
     """
     Обновление информации по пользователю
     :param user
@@ -72,7 +72,7 @@ def update_user(user: schemas.UserUpdate = Body()):
 
 
 @api.delete('/user/{user_id}')
-def delete_user(user_id: int = Path()):
+def delete_user(user_id: int = Path()) -> dict:
     """
     Удалeние пользователя
     :param user_id:
@@ -85,7 +85,7 @@ def delete_user(user_id: int = Path()):
 
 
 @api.get("/get_user_balance/{tg_id}")
-def user_balance_getter(tg_id: int = Path()):
+def user_balance_getter(tg_id: int = Path()) -> dict:
     """
     Получение баланса пользователя по его tg_id
     :param tg_id:
@@ -98,7 +98,7 @@ def user_balance_getter(tg_id: int = Path()):
 
 
 @api.get('/get_total_balance')
-def get_total_balance():
+def get_total_balance() -> dict:
     """
     Получение общего баланса всех кошельков
     """
@@ -110,7 +110,7 @@ def get_total_balance():
 
 
 @api.post("/create_transaction")
-def create_transaction(trans_details: schemas.CreateTransaction):
+def create_transaction(trans_details: schemas.CreateTransaction) -> dict:
     try:
         transaction = users_crud.create_transaction(
             sender_id=trans_details.sender_tg_id,
@@ -124,6 +124,17 @@ def create_transaction(trans_details: schemas.CreateTransaction):
     if isinstance(transaction, str):
         return {"failed": transaction}
     return {"successful": transaction.to_dict()}
+
+
+@api.get("/get_user_transactions/{tg_id}")
+def get_transactions_by_tg_id(tg_id: int = Path()):
+    """Получение транзакций пользователя"""
+    try:
+        transactions = users_crud.get_user_transactions(tg_id=tg_id)
+    except ERDiagramError as database_exception:
+        return {"db_error": f'{database_exception}'}
+    return {"transactions": transactions}
+
 
 
 # @api.get("/user/{user_id}")

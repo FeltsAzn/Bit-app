@@ -1,9 +1,5 @@
 from http.client import HTTPException
-
 import telebot
-from pony.orm import IntegrityError
-from urllib3 import HTTPConnectionPool
-
 from tg_bot.start_bot import bot
 from .. import client
 
@@ -14,7 +10,7 @@ def connection_checker(response):
     elif "not_found" in response.keys():
         raise AttributeError(f"{response['not_found']}")
     elif "db_data_error" in response.keys():
-        raise AttributeError(f"{response['db_data_error']}")
+        raise TypeError(f"{response['db_data_error']}")
     elif "server_error" in response.keys():
         raise HTTPException(f"{response['server_error']}")
     else:
@@ -34,7 +30,7 @@ def start_message(message):
 
 
 @bot.message_handler(func=lambda message: message.text == "Попробовать обратиться снова")
-def start_message(message):
+def second_try(message):
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt1 = telebot.types.KeyboardButton("Да, создать кошелек")
     btn2 = telebot.types.KeyboardButton("Нет, у меня уже есть кошелек")
@@ -48,6 +44,7 @@ def start_message(message):
 @bot.message_handler(
     func=lambda message: message.text == 'Да, создать кошелек' or message.text == 'Попробовать создать кошелек')
 def create_user(message):
+    """Обработка пользователя, который хочет создать новый кошелек"""
     try:
         connection_checker(response=client.create_user(
             {"tg_id": message.from_user.id,
@@ -71,13 +68,12 @@ def create_user(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
-    except AttributeError:
+    except TypeError:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt1 = telebot.types.KeyboardButton("Попробовать создать кошелек")
-        bnt2 = telebot.types.KeyboardButton("Найти мой кошелек")
-        markup.add(bnt1, bnt2)
+        bnt = telebot.types.KeyboardButton("Найти мой кошелек")
+        markup.add(bnt)
         text = f'Ой, что-то пошло не так :(\n' \
-               f'Возможно у вас уже есть кошелек?\n'
+               f'Похоже у вас уже есть кошелек, попробуйте найти его.\n'
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
     else:
@@ -89,8 +85,10 @@ def create_user(message):
 
 
 @bot.message_handler(
-    func=lambda message: message.text == "Нет, у меня уже есть кошелек" or message.text == 'Найти мой кошелек')
+    func=lambda message: message.text == "Нет, у меня уже есть кошелек"
+    or message.text == 'Найти мой кошелек')
 def check_user(message):
+    """Обработка пользователя, который хочет найти уже созданный кошелек"""
     try:
         connection_checker(response=client.get_user_by_tg(message.from_user.id))
 
@@ -127,19 +125,22 @@ def check_user(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-@bot.message_handler(regexp="Открыть кошелек")
-def check_user(message):
+@bot.message_handler(func=lambda message: message.text == 'Меню'
+                     or message.text == "Закрыть админ-панель"
+                     or message.text == "Открыть кошелек")
+def menu(message):
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt1 = telebot.types.KeyboardButton("Кошелек")
     btn2 = telebot.types.KeyboardButton("Перевести")
     btn3 = telebot.types.KeyboardButton("История")
     markup.add(bnt1, btn2, btn3)
-    text = f'Выберите действия'
+    text = 'Выберите действие' if message.text != "Открыть кошелек" else 'Возвращение в меню'
     bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
 @bot.message_handler(regexp='Кошелек')
 def wallet(message):
+    bot.send_message(chat_id=message.chat.id, text="Подождите...")
     try:
         balance = connection_checker(response=client.get_user_balance(message.from_user.id))
 
@@ -168,7 +169,8 @@ def wallet(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-@bot.message_handler(regexp='Перевести')
+@bot.message_handler(func=lambda message: message.text == 'Перевести'
+                     or message.text == "Создать транзакцию")
 def transaction(message):
     # TODO привязать к БД
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -180,22 +182,43 @@ def transaction(message):
 
 @bot.message_handler(regexp='История')
 def history(message):
-    # TODO привязать к БД
-    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    bnt1 = telebot.types.KeyboardButton("Меню")
-    markup.add(bnt1)
-    transactions = ['1', '2', '3']
-    text = f'Ваши транзакции: {transactions}'
-    bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    bot.send_message(chat_id=message.chat.id, text="Подождите...")
+    try:
+        transactions = connection_checker(client.get_user_transactions(message.from_user.id))
+        print(transactions)
+    except HTTPException:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+        text = f'Ой, что-то пошло не так :(\n' \
+               f'Возможно сервер не отвечает.\n' \
+               f'Попробуйте создать чуть позже'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
+    except ConnectionError:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+        text = f'Ой, что-то пошло не так :(\n' \
+               f'Попробуйте обратиться позже.'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
-@bot.message_handler(func=lambda message: message.text == 'Меню' or message.text == "Закрыть админ-панель")
-def start_message(message):
-    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    bnt1 = telebot.types.KeyboardButton("Кошелек")
-    btn2 = telebot.types.KeyboardButton("Перевести")
-    btn3 = telebot.types.KeyboardButton("История")
-    markup.add(bnt1, btn2, btn3)
-    bot.send_message(chat_id=message.chat.id, text='Возвращение в меню', reply_markup=markup)
+    except AttributeError:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt1 = telebot.types.KeyboardButton("Создать транзакцию")
+        bnt2 = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt1, bnt2)
+        text = f'К сожалению, у вас еще нет транзакций\n' \
+               f'Хотите создать транзацкию?'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+
+    else:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+        text = f'Ваши транзакции: {transactions["transactions"]}'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+
 
 
