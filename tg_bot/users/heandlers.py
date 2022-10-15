@@ -195,7 +195,6 @@ def history(message):
     bot.send_message(chat_id=message.chat.id, text="Подождите...")
     try:
         transactions = connection_checker(client.get_user_transactions(message.from_user.id))
-        print(transactions)
     except HTTPException:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         bnt = telebot.types.KeyboardButton("Меню")

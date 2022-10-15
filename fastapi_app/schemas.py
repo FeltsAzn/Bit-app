@@ -57,8 +57,8 @@ class CreateTransaction(BaseModel):
     sender_tg_id: int
     receiver_address: str
     amount_btc_without_fee: float
-    fee: float = None
-    testnet: bool = False
+    # fee: float = None
+    # testnet: bool = False
 
 
 UserUpdate.update_forward_refs()

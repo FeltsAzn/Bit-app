@@ -113,11 +113,11 @@ def get_total_balance() -> dict:
 def create_transaction(trans_details: schemas.CreateTransaction) -> dict:
     try:
         transaction = users_crud.create_transaction(
-            sender_id=trans_details.sender_tg_id,
+            sender_tg_id=trans_details.sender_tg_id,
             amount_btc_without_fee=trans_details.amount_btc_without_fee,
             receiver_address=trans_details.receiver_address,
-            fee=trans_details.fee,
-            testnet=trans_details.testnet
+            # fee=trans_details.fee,
+            # testnet=trans_details.testnet
         )
     except ERDiagramError as database_exception:
         return {"db_error": f'{database_exception}'}

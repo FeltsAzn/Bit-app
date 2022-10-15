@@ -36,33 +36,52 @@ def create_transaction(
         sender_tg_id: int,
         amount_btc_without_fee: float,
         receiver_address: str,
-        fee: float | None,
+        fee: float = None,
         testnet: bool = False
 ) -> Transaction | str:
     """Возвращается информация по созданной транзакции, либо уведомление о недостаточном количество валюты"""
     sender = admins_crud.get_user_by_tg(sender_tg_id)
-    wallet_sender = bit.PrivateKeyTestnet(sender.wallet.private_key) if testnet else bit.Key(sender.wallet.private_key)
-    sender.wallet.balance = wallet_sender.get_balance()
+    sender_wallet = bit.PrivateKeyTestnet(sender.wallet.private_key) if testnet else bit.Key(sender.wallet.private_key)
+    sender.wallet.balance = sender_wallet.get_balance()
+
     if fee is None:
         fee = bit.network.fees.get_fee() * 1000
+
     amount_btc_with_fee = amount_btc_without_fee + fee
     if amount_btc_with_fee >= sender.wallet.balance:
         return f'Too low balance {sender.wallet.balance}'
 
     output = [(receiver_address, amount_btc_without_fee, 'satoshi')]
 
-    tx_hash = wallet_sender.send(output, fee, absolute_fee=True)
+    tx_hash = sender_wallet.send(output, fee, absolute_fee=True)
 
-    transaction = Transaction(
-        sender=sender,
-        sender_wallet=sender.wallet,
-        fee=fee,
-        sender_address=sender.wallet.address,
-        receiver_address=receiver_address,
-        amount_btc_with_fee=amount_btc_with_fee,
-        amount_btc_without_fee=amount_btc_without_fee,
-        tx_hash=tx_hash
-    )
+    receiver_wallet = Wallet.select(lambda wallet: wallet.address == receiver_address).first()
+    if receiver_wallet is None:
+        """Проверка на то, если наш адрес отправления не находится в нашей бд"""
+        transaction = Transaction(
+            sender=sender,
+            sender_wallet=sender.wallet,
+            sender_address=sender.wallet.address,
+            receiver_address=receiver_address,
+            amount_btc_with_fee=amount_btc_with_fee,
+            amount_btc_without_fee=amount_btc_without_fee,
+            fee=fee,
+            tx_hash=tx_hash
+        )
+    else:
+        receiver = User.select(lambda user: user.wallet == receiver_wallet).first()
+        transaction = Transaction(
+            sender=sender,
+            receiver=receiver,
+            sender_wallet=sender.wallet,
+            receiver_wallet=receiver_wallet,
+            sender_address=sender.wallet.address,
+            receiver_address=receiver_address,
+            amount_btc_with_fee=amount_btc_with_fee,
+            amount_btc_without_fee=amount_btc_without_fee,
+            fee=fee,
+            tx_hash=tx_hash
+        )
     return transaction.to_dict()
 
 

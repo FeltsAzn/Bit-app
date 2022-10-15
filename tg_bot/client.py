@@ -49,7 +49,7 @@ def create_user(user: dict):
     """
     user = schemas.UserCreate.validate(user)
     try:
-        response = requests.post(f'{API_URL}/user/create', data=user.json())
+        response = requests.post(f'{API_URL}/user/create', data=user.json()).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -111,9 +111,9 @@ def total_balance() -> dict:
     return response
 
 
-def create_transaction(transaction_info: schemas.CreateTransaction) -> dict:
+def create_transaction(transaction_info: dict) -> dict:
     """
-    Создание транзакцию
+    Создание транзакции
     :param transaction_info:
     :return server response(dict):
     """

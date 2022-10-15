@@ -17,6 +17,8 @@ from telebot.storage import StateMemoryStorage
 # If you were using older version of pytba for pickle,
 # you need to migrate from old pickle to new by using
 # StatePickleStorage().convert_old_to_new()
+transaction_cache = dict()
+
 
 def connection_checker(response):
     if 'db_error' in response.keys():
@@ -30,13 +32,17 @@ def connection_checker(response):
     else:
         return response
 
-# Now, you can pass storage to bot.
-# States group.
+
 class MyStates(StatesGroup):
     # Just name variables differently  # creating instances of State class is enough from now
+    sender = State()
     receiver_address = State()
-    amount_btc_without_fee = State()
+    amount = State()
     confirmation = State()
+
+
+# Now, you can pass storage to bot.
+# States group.
 
 
 @bot.message_handler(
@@ -44,70 +50,131 @@ class MyStates(StatesGroup):
     or message.text == "Создать транзакцию"
 )
 def start_ex(message):
-    user = connection_checker(response=client.get_user_by_tg(message.from_user.id))
+    """Получем информацию об отправителе, входим в машину состояния"""
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt = telebot.types.KeyboardButton("Отмена создания транзакции")
     markup.add(bnt)
     bot.set_state(message.from_user.id, MyStates.receiver_address, message.chat.id)
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['sender_address'] = message.
+        data['sender'] = message.from_user.id
     bot.send_message(message.chat.id, text='Введите адрес кошелька куда хотите перевести:', reply_markup=markup)
-
-
-# Any state
-# @bot.message_handler(state="*")
-# def any_state(message):
-#     """
-#     Cancel state
-#     """
-#     bot.send_message(message.chat.id, "Your state was cancelled.")
-#     bot.delete_state(message.from_user.id, message.chat.id)
 
 
 @bot.message_handler(state=MyStates.receiver_address)
 def receiver_address(message):
     """
-    State 1. Will process when user's state is MyStates.name.
+    Ввод адреса получателя
     """
-    bot.send_message(message.chat.id, 'Now write me a surname')
-    bot.set_state(message.from_user.id, MyStates.amount_btc_without_fee, message.chat.id)
+    bot.send_message(message.chat.id, text="Подождите, проверяю баланс...")
+    try:
+        balance = connection_checker(response=client.get_user_balance(message.from_user.id))
+    except ConnectionError | AttributeError | TypeError | HTTPException:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+        bot.send_message(message.chat.id, text="Ошибка транзакции, попробуйте перевести позже", reply_markup=markup)
+        bot.delete_state(message.from_user.id, message.chat.id)
+    else:
+        bot.send_message(message.chat.id, f"Количество валюты, которую хотите отправить:\n"
+                                          f"Ваш баланс {balance['balance']}")
+        bot.set_state(message.from_user.id, MyStates.amount, message.chat.id)
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            data['receiver_address'] = message.text
 
 
-
-@bot.message_handler(state=MyStates.amount_btc_without_fee)
+@bot.message_handler(state=MyStates.amount)
 def amount_btc_without_fee(message):
     """
-    State 2. Will process when user's state is MyStates.surname.
+    Ввод количества валюты для перевода
     """
-    bot.send_message(message.chat.id, "What is your age?")
-    bot.set_state(message.from_user.id, MyStates.amount_btc_without_fee, message.chat.id)
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['receiver_address'] = message.text
+    try:
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            data['amount'] = float(message.text)
+    except ValueError:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt1 = telebot.types.KeyboardButton("Нет, отказываюсь")
+        bnt2 = telebot.types.KeyboardButton("Да, подтверждаю")
+        markup.add(bnt1, bnt2)
+        text = "Введенное количество неверно!\n" \
+               "Введите число!"
+        bot.send_message(message.chat.id, text=text)
+
+    else:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt1 = telebot.types.KeyboardButton("Нет, отказываюсь")
+        bnt2 = telebot.types.KeyboardButton("Да, подтверждаю")
+        markup.add(bnt1, bnt2)
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            msg = ("Данные транзакции\n<b>"
+                   f"Данные отправителя: {message.from_user.full_name}\n"
+                   f"Адрес отправления: {data['receiver_address']}\n"
+                   f"Количество валюты: {data['amount']}</b>")
+            transaction_cache["sender_tg_id"] = data['sender']
+            transaction_cache["receiver_address"] = data['receiver_address']
+            transaction_cache["amount_btc_without_fee"] = data['amount']
+        bot.delete_state(message.from_user.id, message.chat.id)
+        bot.send_message(message.chat.id, text=msg, reply_markup=markup, parse_mode="html")
 
 
-# result
-@bot.message_handler(state=MyStates.confirmation, is_digit=True)
-def ready_for_answer(message):
+@bot.message_handler(
+    func=lambda message: message.text == "Да, подтверждаю"
+)
+def confirm_transaction(message):
     """
-    State 3. Will process when user's state is MyStates.age.
+    Подтверждение транзакции
     """
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['amount_btc_without_fee'] = message.text
-    bot.set_state(message.from_user.id, MyStates.confirmation, message.chat.id)
+    bot.send_message(message.chat.id, text="Отправляю транзакцию...")
+    try:
+        transaction = connection_checker(client.create_transaction(transaction_cache))
+        print(transaction)
+    except HTTPException:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+        text = f'Ой, что-то пошло не так :(\n' \
+               f'Возможно сервер не отвечает.\n' \
+               f'Попробуйте создать транзакцию чуть позже'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
-# incorrect number
-@bot.message_handler(state=MyStates.confirmation, is_digit=False)
-def age_incorrect(message):
-    """
-    Wrong response for MyStates.age
-    """
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        msg = ("Ready, take a look:\n<b>"
-               f"Sender address: {data['sender_address']}\n"
-               f"Receiver address: {data['receiver_address']}\n"
-               f"Amount: {data['amount_btc_without_fee']}</b>")
-        bot.send_message(message.chat.id, msg, parse_mode="html")
-    bot.delete_state(message.from_user.id, message.chat.id)
+    except ConnectionError:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+        text = f'Ой, что-то пошло не так :(\n' \
+               f'Попробуйте обратиться позже.'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+
+    except TypeError:
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt1 = telebot.types.KeyboardButton("Создать транзакцию")
+        btn2 = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt1, btn2)
+        text = f'Неправильно введены данные транзакции\n' \
+               f'Хотите создать новую транзакцию?\n'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    else:
+        if "failed" in transaction:
+            text = "Ошибка транзакции.\n" \
+                   "Недостаточно средств на вашем счете."
+        else:
+            text = "Транзакция совершена успешно."
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton("Меню")
+        markup.add(bnt)
+
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-# register filters
+@bot.message_handler(
+    func=lambda message: message.text == "Отмена создания транзакции"
+    or message.text == "Нет, отказываюсь"
+)
+def cancel_transaction(message):
+    """
+    Отмена транзакции
+    """
+    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    bnt = telebot.types.KeyboardButton("Меню")
+    markup.add(bnt)
+    bot.send_message(message.chat.id, text="Отмена транзакции.", reply_markup=markup)
