@@ -1,3 +1,4 @@
 /.*
 /venv
-/tg_bot/config.py
+/tg_bot/tg_bot_config.py
+/fastapi_app/fastapi_config.py

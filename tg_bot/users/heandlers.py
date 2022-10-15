@@ -109,7 +109,8 @@ def create_user(message):
 def check_user(message):
     """Обработка пользователя, который хочет найти уже созданный кошелек"""
     try:
-        connection_checker(response=client.get_user_by_tg(message.from_user.id))
+        tg_id = message.from_user.id
+        connection_checker(response=client.get_user_by_tg(tg_id=tg_id))
 
     except HTTPException:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -148,7 +149,8 @@ def check_user(message):
 def wallet(message):
     bot.send_message(chat_id=message.chat.id, text="Подождите...")
     try:
-        balance = connection_checker(response=client.get_user_balance(message.from_user.id))
+        tg_id = message.from_user.id
+        balance = connection_checker(response=client.get_user_balance(tg_id=tg_id))
 
     except HTTPException:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -179,7 +181,8 @@ def wallet(message):
 def history(message):
     bot.send_message(chat_id=message.chat.id, text="Подождите...")
     try:
-        transactions = connection_checker(client.get_user_transactions(message.from_user.id))
+        tg_id = message.from_user.id
+        transactions = connection_checker(client.get_user_transactions(tg_id=tg_id))
     except HTTPException:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         bnt = telebot.types.KeyboardButton("Меню")

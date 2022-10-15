@@ -1,6 +1,6 @@
 import math
 
-from tg_bot import config
+from tg_bot import tg_bot_config
 from tg_bot.start_bot import bot
 import telebot
 

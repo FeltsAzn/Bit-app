@@ -1,4 +1,4 @@
-from tg_bot.config import API_URL
+from tg_bot.tg_bot_config import API_URL
 import requests
 from fastapi_app import schemas
 

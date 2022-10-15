@@ -61,6 +61,27 @@ class CreateTransaction(BaseModel):
     # testnet: bool = False
 
 
-UserUpdate.update_forward_refs()
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
+class Admin(BaseModel):
+    username: str
+
+
+class UserInDB(Admin):
+    hashed_password: str
+
+
+User.update_forward_refs()
+UserCreate.update_forward_refs()
+Transaction.update_forward_refs()
+CreateTransaction.update_forward_refs()
+Wallet.update_forward_refs()
 
 

@@ -1,5 +1,5 @@
 from telebot import TeleBot, StateMemoryStorage, custom_filters
-from tg_bot.config import BOT_TOKEN
+from tg_bot.tg_bot_config import BOT_TOKEN
 
 
 state_storage = StateMemoryStorage()
