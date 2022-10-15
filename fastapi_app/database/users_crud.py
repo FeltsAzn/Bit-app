@@ -111,10 +111,9 @@ def get_transaction_info(transaction: schemas.Transaction) -> dict:
 
 
 @db_session
-def get_user_transactions(tg_id: int) -> list[dict]:
+def get_user_transactions(tg_id: int) -> dict[str: list]:
     user = admins_crud.get_user_by_tg(tg_id)
-    transactions = []
-    for transaction in Transaction.select(lambda tr: user == tr.sender)[:]:
-        transactions.append(transaction.to_dict())
-    return transactions
+    user_transactions = {"sended_transactions": user.sended_transactions,
+                         "received_transactions": user.received_transactions}
+    return user_transactions
 

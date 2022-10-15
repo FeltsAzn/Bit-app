@@ -1,7 +1,3 @@
-from http.client import HTTPException
-import telebot
-from tg_bot.start_bot import bot
-from .. import client
 from tg_bot.users.fsm_transaction import *
 
 
@@ -11,7 +7,7 @@ def connection_checker(response):
     elif "not_found" in response.keys():
         raise AttributeError(f"{response['not_found']}")
     elif "db_data_error" in response.keys():
-        raise TypeError(f"{response['db_data_error']}")
+        raise ValueError(f"{response['db_data_error']}")
     elif "server_error" in response.keys():
         raise HTTPException(f"{response['server_error']}")
     else:
@@ -90,7 +86,7 @@ def create_user(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
-    except TypeError:
+    except ValueError:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         bnt = telebot.types.KeyboardButton("Найти мой кошелек")
         markup.add(bnt)
@@ -179,17 +175,6 @@ def wallet(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-# @bot.message_handler(
-
-# def transaction(message):
-#     # TODO привязать к БД
-#     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-#     bnt1 = telebot.types.KeyboardButton()
-#     markup.add(bnt1)
-#     text = f'Введите адрес кошелька куда хотите перевести: '
-#     bot.send_message(message.chat.id, text, reply_markup=markup)
-
-
 @bot.message_handler(regexp='История')
 def history(message):
     bot.send_message(chat_id=message.chat.id, text="Подождите...")
@@ -226,5 +211,7 @@ def history(message):
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         bnt = telebot.types.KeyboardButton("Меню")
         markup.add(bnt)
-        text = f'Ваши транзакции: {transactions["transactions"]}'
+        text = f'Ваши транзакции:\n' \
+               f'{transactions["transactions"]["sended_transactions"]}\n' \
+               f'{transactions["transactions"]["received_transactions"]}'
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)

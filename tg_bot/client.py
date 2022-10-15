@@ -125,7 +125,7 @@ def create_transaction(transaction_info: dict) -> dict:
     return response
 
 
-def get_user_transactions(tg_id: int):
+def get_user_transactions(tg_id: int) -> dict:
     """
     Получение общего баланса пользователей (для админа)
     :param tg_id:

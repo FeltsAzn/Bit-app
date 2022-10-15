@@ -2,21 +2,9 @@ import telebot  # telebot
 from tg_bot.start_bot import bot
 from http.client import HTTPException
 from telebot.handler_backends import State, StatesGroup
-from .. import client# States
+from .. import client
 
-# States storage
-from telebot.storage import StateMemoryStorage
 
-# Starting from version 4.4.0+, we support storages.
-# StateRedisStorage -> Redis-based storage.
-# StatePickleStorage -> Pickle-based storage.
-# For redis, you will need to install redis.
-# Pass host, db, password, or anything else,
-# if you need to change config for redis.
-# Pickle requires path. Default path is in folder .state-saves.
-# If you were using older version of pytba for pickle,
-# you need to migrate from old pickle to new by using
-# StatePickleStorage().convert_old_to_new()
 transaction_cache = dict()
 
 
@@ -26,7 +14,7 @@ def connection_checker(response):
     elif "not_found" in response.keys():
         raise AttributeError(f"{response['not_found']}")
     elif "db_data_error" in response.keys():
-        raise TypeError(f"{response['db_data_error']}")
+        raise ValueError(f"{response['db_data_error']}")
     elif "server_error" in response.keys():
         raise HTTPException(f"{response['server_error']}")
     else:
@@ -34,15 +22,11 @@ def connection_checker(response):
 
 
 class MyStates(StatesGroup):
-    # Just name variables differently  # creating instances of State class is enough from now
+
     sender = State()
     receiver_address = State()
     amount = State()
     confirmation = State()
-
-
-# Now, you can pass storage to bot.
-# States group.
 
 
 @bot.message_handler(
@@ -68,7 +52,7 @@ def receiver_address(message):
     bot.send_message(message.chat.id, text="Подождите, проверяю баланс...")
     try:
         balance = connection_checker(response=client.get_user_balance(message.from_user.id))
-    except ConnectionError | AttributeError | TypeError | HTTPException:
+    except ConnectionError | AttributeError | ValueError | HTTPException:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         bnt = telebot.types.KeyboardButton("Меню")
         markup.add(bnt)
