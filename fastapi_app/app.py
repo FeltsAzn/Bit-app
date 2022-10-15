@@ -1,15 +1,38 @@
 # from database.models import *
+from fastapi.params import Depends
 from pony.orm.core import ERDiagramError, TransactionIntegrityError
-
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_app.database import users_crud, admins_crud
 from fastapi_app import schemas
-from fastapi import FastAPI, Body, Path
+from fastapi import FastAPI, Body, Path, HTTPException, status
+from fastapi_app.auth import get_current_user, authenticate_user, create_access_token
+
+from fastapi_app.schemas import Admin
 
 api = FastAPI()
 
 
+@api.post("/token", response_model=schemas.Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(
+        data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@api.get("/users/me/", response_model=Admin)
+async def read_users_me(current_user: Admin = Depends(get_current_user)):
+    return current_user
+
+
 @api.get("/users")
-def get_all_users() -> dict:
+def get_all_users(current_user: Admin = Depends(get_current_user)) -> dict:
     """Информация по всем пользователям"""
     try:
         all_users = admins_crud.get_all_user()
@@ -21,7 +44,7 @@ def get_all_users() -> dict:
 
 
 @api.get('/get_info_by_user/{user_id}')
-def get_info_about_user(user_id: int = Path()) -> dict:
+def get_info_about_user(user_id: int = Path(), current_user: Admin = Depends(get_current_user)) -> dict:
     """Информация по пользователю по его id"""
     try:
         user_id = admins_crud.get_user_info(user_id)
@@ -59,10 +82,12 @@ def user_create(user: schemas.UserCreate = Body()) -> dict:
 
 
 @api.put("/user/{user_id}")
-def update_user(user: schemas.UserUpdate = Body()) -> dict:
+def update_user(user: schemas.UserUpdate = Body(),
+                current_user: Admin = Depends(get_current_user)) -> dict:
     """
     Обновление информации по пользователю
-    :param user
+    :param user:
+    :param current_user:
     """
     try:
         updated_user = admins_crud.update_user(user).to_dict()
@@ -72,10 +97,11 @@ def update_user(user: schemas.UserUpdate = Body()) -> dict:
 
 
 @api.delete('/user/{user_id}')
-def delete_user(user_id: int = Path()) -> dict:
+def delete_user(user_id: int = Path(), current_user: Admin = Depends(get_current_user)) -> dict:
     """
     Удалeние пользователя
     :param user_id:
+    :param current_user:
     """
     try:
         admins_crud.delete_user(user_id)
@@ -88,7 +114,6 @@ def delete_user(user_id: int = Path()) -> dict:
 def user_balance_getter(tg_id: int = Path()) -> dict:
     """
     Получение баланса пользователя по его tg_id
-    :param tg_id:
     """
     try:
         user_balance = users_crud.get_user_balance(tg_id)
@@ -98,7 +123,7 @@ def user_balance_getter(tg_id: int = Path()) -> dict:
 
 
 @api.get('/get_total_balance')
-def get_total_balance() -> dict:
+def get_total_balance(current_user: Admin = Depends(get_current_user)) -> dict:
     """
     Получение общего баланса всех кошельков
     """
@@ -134,11 +159,3 @@ def get_transactions_by_tg(tg_id: int = Path()):
     except ERDiagramError as database_exception:
         return {"db_error": f'{database_exception}'}
     return {"transactions": transactions}
-
-
-
-# @api.get("/user/{user_id}")
-# def read_user(user_id: str, query: str | None = None):
-#     if query:
-#         return {"item_id": user_id, "query": query}
-#     return {"item_id": user_id}
