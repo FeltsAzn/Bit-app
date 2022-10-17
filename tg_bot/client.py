@@ -1,6 +1,8 @@
-from tg_bot.tg_bot_config import API_URL
+from tg_bot.tg_bot_config import API_URL, SECRET_HEADER
 import requests
 from fastapi_app import schemas
+
+users_token_cache = {}
 
 
 def get_users():
@@ -30,12 +32,13 @@ def get_info_about_user(user_id: int):
 
 def get_user_by_tg(tg_id: int):
     """
-    Получение информации о пользователе (для админа)
+    Получение информации о пользователе
     :param tg_id:
     :return server response(dict):
     """
     try:
-        response = requests.get(f'{API_URL}/get_user_by_tg/{tg_id}').json()
+        response = requests.get(f'{API_URL}/get_user_by_tg/{tg_id}',
+                                headers={"secret-key": SECRET_HEADER}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -49,7 +52,9 @@ def create_user(user: dict):
     """
     user = schemas.UserCreate.validate(user)
     try:
-        response = requests.post(f'{API_URL}/user/create', data=user.json()).json()
+        response = requests.post(f'{API_URL}/user/create',
+                                 data=user.json(),
+                                 headers={"secret-key": SECRET_HEADER}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -93,7 +98,8 @@ def get_user_balance(tg_id: int) -> dict:
     :return server response(dict):
     """
     try:
-        response = requests.get(f"{API_URL}/get_user_balance/{tg_id}").json()
+        response = requests.get(f"{API_URL}/get_user_balance/{tg_id}",
+                                headers={"secret-key": SECRET_HEADER}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -119,7 +125,9 @@ def create_transaction(transaction_info: dict) -> dict:
     """
     try:
         transaction_info = schemas.CreateTransaction.validate(transaction_info)
-        response = requests.post(f'{API_URL}/create_transaction', data=transaction_info.json()).json()
+        response = requests.post(f'{API_URL}/create_transaction',
+                                 data=transaction_info.json(),
+                                 headers={"secret-key": SECRET_HEADER}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -127,12 +135,13 @@ def create_transaction(transaction_info: dict) -> dict:
 
 def get_user_transactions(tg_id: int) -> dict:
     """
-    Получение общего баланса пользователей (для админа)
+    Получение общего баланса пользователей
     :param tg_id:
     :return server response(dict):
     """
     try:
-        response = requests.get(f"{API_URL}/get_user_transactions/{tg_id}").json()
+        response = requests.get(f"{API_URL}/get_user_transactions/{tg_id}",
+                                headers={"secret-key": SECRET_HEADER}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response

@@ -1,13 +1,11 @@
-# from database.models import *
+from fastapi_app.database import users_crud, admins_crud
+from fastapi_app.auth import get_current_user, authenticate_user, create_access_token
+from fastapi_app import schemas
 from fastapi.params import Depends
 from pony.orm.core import ERDiagramError, TransactionIntegrityError
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_app.database import users_crud, admins_crud
-from fastapi_app import schemas
-from fastapi import FastAPI, Body, Path, HTTPException, status
-from fastapi_app.auth import get_current_user, authenticate_user, create_access_token
-
-from fastapi_app.schemas import Admin
+from fastapi import FastAPI, Body, Path, HTTPException, status, Response, Header
+from fastapi_app.fastapi_config import SECRET_HEADER
 
 api = FastAPI()
 
@@ -26,13 +24,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@api.get("/users/me/", response_model=Admin)
-async def read_users_me(current_user: Admin = Depends(get_current_user)):
+@api.get("/users/me/", response_model=schemas.Admin)
+async def read_users_me(current_user: schemas.Admin = Depends(get_current_user)):
     return current_user
 
 
 @api.get("/users")
-def get_all_users(current_user: Admin = Depends(get_current_user)) -> dict:
+def get_all_users(current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """Информация по всем пользователям"""
     try:
         all_users = admins_crud.get_all_user()
@@ -44,7 +42,7 @@ def get_all_users(current_user: Admin = Depends(get_current_user)) -> dict:
 
 
 @api.get('/get_info_by_user/{user_id}')
-def get_info_about_user(user_id: int = Path(), current_user: Admin = Depends(get_current_user)) -> dict:
+def get_info_about_user(user_id: int = Path(), current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """Информация по пользователю по его id"""
     try:
         user_id = admins_crud.get_user_info(user_id)
@@ -56,34 +54,38 @@ def get_info_about_user(user_id: int = Path(), current_user: Admin = Depends(get
 
 
 @api.get('/get_user_by_tg/{tg_id}')
-def get_user_by_tg(tg_id: int) -> dict:
+def get_user_by_tg(tg_id: int = Path(), secret_key: str = Header()) -> dict:
     """Информация по пользователю по его tg_id"""
-    try:
-        user = admins_crud.get_user_by_tg(tg_id)
+    if secret_key == SECRET_HEADER:
+        try:
+            user = admins_crud.get_user_by_tg(tg_id)
 
-    except ERDiagramError as database_exception:
-        return {"db_error": f'{database_exception}'}
+        except ERDiagramError as database_exception:
+            return {"db_error": f'{database_exception}'}
 
-    if user:
-        return {"user": user.to_dict()}
-    return {"not_found": "user not found in database"}
+        if user:
+            return {"user": user.to_dict()}
+        return {"not_found": "user not found in database"}
+    raise HTTPException(status_code=401)
 
 
 @api.post("/user/create")
-def user_create(user: schemas.UserCreate = Body()) -> dict:
+def user_create(user: schemas.UserCreate = Body(), secret_key: str = Header()) -> dict:
     """Создание нового пользователя"""
-    try:
-        new_user = users_crud.create_user(user)
-    except ERDiagramError as database_exception:
-        return {"db_error": f'{database_exception}'}
-    except TransactionIntegrityError as database_error:
-        return {"db_data_error": f'{database_error}'}
-    return {"User_created!": new_user}
+    if secret_key == SECRET_HEADER:
+        try:
+            new_user = users_crud.create_user(user)
+        except ERDiagramError as database_exception:
+            return {"db_error": f'{database_exception}'}
+        except TransactionIntegrityError as database_error:
+            return {"db_data_error": f'{database_error}'}
+        return {"User_created!": new_user}
+    raise HTTPException(status_code=401)
 
 
 @api.put("/user/{user_id}")
 def update_user(user: schemas.UserUpdate = Body(),
-                current_user: Admin = Depends(get_current_user)) -> dict:
+                current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """
     Обновление информации по пользователю
     :param user:
@@ -97,7 +99,7 @@ def update_user(user: schemas.UserUpdate = Body(),
 
 
 @api.delete('/user/{user_id}')
-def delete_user(user_id: int = Path(), current_user: Admin = Depends(get_current_user)) -> dict:
+def delete_user(user_id: int = Path(), current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """
     Удалeние пользователя
     :param user_id:
@@ -111,19 +113,21 @@ def delete_user(user_id: int = Path(), current_user: Admin = Depends(get_current
 
 
 @api.get("/get_user_balance/{tg_id}")
-def user_balance_getter(tg_id: int = Path()) -> dict:
+def user_balance_getter(tg_id: int = Path(), secret_key: str = Header()) -> dict:
     """
     Получение баланса пользователя по его tg_id
     """
-    try:
-        user_balance = users_crud.get_user_balance(tg_id)
-    except ERDiagramError as database_exception:
-        return {"db_error": f'{database_exception}'}
-    return {"balance": user_balance}
+    if secret_key == SECRET_HEADER:
+        try:
+            user_balance = users_crud.get_user_balance(tg_id)
+        except ERDiagramError as database_exception:
+            return {"db_error": f'{database_exception}'}
+        return {"balance": user_balance}
+    raise HTTPException(status_code=401)
 
 
 @api.get('/get_total_balance')
-def get_total_balance(current_user: Admin = Depends(get_current_user)) -> dict:
+def get_total_balance(current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """
     Получение общего баланса всех кошельков
     """
@@ -135,27 +139,32 @@ def get_total_balance(current_user: Admin = Depends(get_current_user)) -> dict:
 
 
 @api.post("/create_transaction")
-def create_transaction(trans_details: schemas.CreateTransaction) -> dict:
-    try:
-        transaction = users_crud.create_transaction(
-            sender_tg_id=trans_details.sender_tg_id,
-            amount_btc_without_fee=trans_details.amount_btc_without_fee,
-            receiver_address=trans_details.receiver_address,
-            # fee=trans_details.fee,
-            # testnet=trans_details.testnet
-        )
-    except ERDiagramError as database_exception:
-        return {"db_error": f'{database_exception}'}
-    if isinstance(transaction, str):
-        return {"failed": transaction}
-    return {"successful": transaction.to_dict()}
+def create_transaction(trans_details: schemas.CreateTransaction, secret_key: str = Header()) -> dict:
+    if secret_key == SECRET_HEADER:
+        try:
+            transaction = users_crud.create_transaction(
+                sender_tg_id=trans_details.sender_tg_id,
+                amount_btc_without_fee=trans_details.amount_btc_without_fee,
+                receiver_address=trans_details.receiver_address,
+                # fee=trans_details.fee,
+                # testnet=trans_details.testnet
+            )
+        except ERDiagramError as database_exception:
+            return {"db_error": f'{database_exception}'}
+        if isinstance(transaction, str):
+            return {"failed": transaction}
+        return {"successful": transaction.to_dict()}
+    raise HTTPException(status_code=401)
 
 
 @api.get("/get_user_transactions/{tg_id}")
-def get_transactions_by_tg(tg_id: int = Path()):
+def get_transactions_by_tg(tg_id: int = Path(), secret_key: str = Header()):
     """Получение транзакций пользователя"""
-    try:
-        transactions = users_crud.get_user_transactions(tg_id=tg_id)
-    except ERDiagramError as database_exception:
-        return {"db_error": f'{database_exception}'}
-    return {"transactions": transactions}
+    if secret_key == SECRET_HEADER:
+        try:
+            transactions = users_crud.get_user_transactions(tg_id=tg_id)
+        except ERDiagramError as database_exception:
+            return {"db_error": f'{database_exception}'}
+        return {"transactions": transactions}
+    raise HTTPException(status_code=401)
+
