@@ -33,7 +33,7 @@ class MyStates(StatesGroup):
     func=lambda message: message.text == 'Перевести'
     or message.text == "Создать транзакцию"
 )
-def start_ex(message):
+def start_fsm(message):
     """Получем информацию об отправителе, входим в машину состояния"""
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt = telebot.types.KeyboardButton("Отмена создания транзакции")
@@ -75,14 +75,9 @@ def amount_btc_without_fee(message):
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['amount'] = float(message.text)
     except ValueError:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt1 = telebot.types.KeyboardButton("Нет, отказываюсь")
-        bnt2 = telebot.types.KeyboardButton("Да, подтверждаю")
-        markup.add(bnt1, bnt2)
         text = "Введенное количество неверно!\n" \
                "Введите число!"
         bot.send_message(message.chat.id, text=text)
-
     else:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         bnt1 = telebot.types.KeyboardButton("Нет, отказываюсь")
@@ -110,24 +105,13 @@ def confirm_transaction(message):
     bot.send_message(message.chat.id, text="Отправляю транзакцию...")
     try:
         transaction = connection_checker(client.create_transaction(transaction_cache))
-        print(transaction)
-    except HTTPException:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Меню")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Возможно сервер не отвечает.\n' \
-               f'Попробуйте создать транзакцию чуть позже'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+        transaction_cache.clear()
 
-    except ConnectionError:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Меню")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Попробуйте обратиться позже.'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    except (HTTPException, ConnectionError) as exception:
+        exception_info(message=message,
+                       http_mark_text="Меню",
+                       conn_mark_text="Меню",
+                       exception=exception)
 
     except TypeError:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -137,6 +121,7 @@ def confirm_transaction(message):
         text = f'Неправильно введены данные транзакции\n' \
                f'Хотите создать новую транзакцию?\n'
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+
     else:
         if "failed" in transaction:
             text = "Ошибка транзакции.\n" \
@@ -158,7 +143,26 @@ def cancel_transaction(message):
     """
     Отмена транзакции
     """
+    transaction_cache.clear()
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     bnt = telebot.types.KeyboardButton("Меню")
     markup.add(bnt)
     bot.send_message(message.chat.id, text="Отмена транзакции.", reply_markup=markup)
+
+
+def exception_info(message, http_mark_text, conn_mark_text, exception):
+    if isinstance(exception, HTTPException):
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton(http_mark_text)
+        markup.add(bnt)
+        text = f'Ой, что-то пошло не так :(\n' \
+               f'Возможно сервер не отвечает.\n' \
+               f'Попробуйте повторить позже.'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    elif isinstance(exception, ConnectionError):
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        bnt = telebot.types.KeyboardButton(conn_mark_text)
+        markup.add(bnt)
+        text = f'Ой, что-то пошло не так :(\n' \
+               f'Попробуйте обратиться позже.'
+        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)

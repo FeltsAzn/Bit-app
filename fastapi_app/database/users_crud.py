@@ -24,10 +24,11 @@ def create_user(user: schemas.UserCreate) -> User:
     """Возвращается информация в виде словаря по созданному пользователю"""
     tg_id: int = user.tg_id
     nickname: str | None = user.nickname
+    is_admin: bool = user.is_admin
     if nickname is None:
-        user = User(tg_id=tg_id, wallet=create_wallet())
+        user = User(tg_id=tg_id, is_admin=is_admin, wallet=create_wallet())
     else:
-        user = User(tg_id=tg_id, nickname=nickname, wallet=create_wallet())
+        user = User(tg_id=tg_id, nickname=nickname, is_admin=is_admin, wallet=create_wallet())
     return user.to_dict()
 
 

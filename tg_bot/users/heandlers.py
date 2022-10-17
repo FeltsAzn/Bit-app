@@ -1,17 +1,5 @@
+from tg_bot.tg_bot_config import ADMIN_ID
 from tg_bot.users.fsm_transaction import *
-
-
-def connection_checker(response):
-    if 'db_error' in response.keys():
-        raise ConnectionError(f"{response['db_error']}")
-    elif "not_found" in response.keys():
-        raise AttributeError(f"{response['not_found']}")
-    elif "db_data_error" in response.keys():
-        raise ValueError(f"{response['db_data_error']}")
-    elif "server_error" in response.keys():
-        raise HTTPException(f"{response['server_error']}")
-    else:
-        return response
 
 
 @bot.message_handler(commands=["start"])
@@ -66,25 +54,14 @@ def create_user(message):
     try:
         connection_checker(response=client.create_user(
             {"tg_id": message.from_user.id,
-             "nickname": message.from_user.username}))
+             "nickname": message.from_user.username,
+             "is_admin": message.from_user.id in ADMIN_ID}))
 
-    except HTTPException:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Попробовать создать кошелек")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Возможно сервер не отвечает.\n' \
-               f'Попробуйте создать чуть позже'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-
-    except ConnectionError:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Попробовать обратиться снова")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Попробуйте обратиться позже.'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    except (HTTPException, ConnectionError) as ex:
+        exception_info(message=message,
+                       http_mark_text="Попробовать создать кошелек",
+                       conn_mark_text="Попробовать обратиться снова",
+                       exception=ex)
 
     except ValueError:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -112,22 +89,11 @@ def check_user(message):
         tg_id = message.from_user.id
         connection_checker(response=client.get_user_by_tg(tg_id=tg_id))
 
-    except HTTPException:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Попробовать обратиться снова")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Возможно сервер не отвечает.\n' \
-               f'Попробуйте создать чуть позже'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-
-    except ConnectionError:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Попробовать обратиться снова")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Попробуйте обратиться позже.'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    except (HTTPException, ConnectionError) as ex:
+        exception_info(message=message,
+                       http_mark_text="Попробовать обратиться снова",
+                       conn_mark_text="Попробовать обратиться снова",
+                       exception=ex)
 
     except AttributeError:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -152,22 +118,11 @@ def wallet(message):
         tg_id = message.from_user.id
         balance = connection_checker(response=client.get_user_balance(tg_id=tg_id))
 
-    except HTTPException:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Меню")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Возможно сервер не отвечает.\n' \
-               f'Попробуйте создать чуть позже'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-
-    except ConnectionError:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Меню")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Попробуйте проверить баланс позже.'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    except (HTTPException, ConnectionError) as ex:
+        exception_info(message=message,
+                       http_mark_text="Меню",
+                       conn_mark_text="Меню",
+                       exception=ex)
 
     else:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -183,23 +138,12 @@ def history(message):
     try:
         tg_id = message.from_user.id
         transactions = connection_checker(client.get_user_transactions(tg_id=tg_id))
-    except HTTPException:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Меню")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Возможно сервер не отвечает.\n' \
-               f'Попробуйте создать чуть позже'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
-    except ConnectionError:
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        bnt = telebot.types.KeyboardButton("Меню")
-        markup.add(bnt)
-        text = f'Ой, что-то пошло не так :(\n' \
-               f'Попробуйте обратиться позже.'
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
-        bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+    except (HTTPException, ConnectionError) as ex:
+        exception_info(message=message,
+                       http_mark_text="Меню",
+                       conn_mark_text="Меню",
+                       exception=ex)
 
     except AttributeError:
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -218,3 +162,6 @@ def history(message):
                f'{transactions["transactions"]["sended_transactions"]}\n' \
                f'{transactions["transactions"]["received_transactions"]}'
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
+
+
+

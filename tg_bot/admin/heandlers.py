@@ -1,16 +1,15 @@
 import math
-
+from tg_bot.tg_bot_config import ADMIN_ID
 from tg_bot import tg_bot_config
 from tg_bot.start_bot import bot
 import telebot
 
-users = config.fake_database['users']
 counter = 0
 database_cache = {}
 
 
 def admin_checker(message, text):
-    if message.from_user.id == config.ADMIN_ID and message.text == text:
+    if message.from_user.id in ADMIN_ID and message.text == text:
         return True
     return False
 

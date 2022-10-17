@@ -6,6 +6,7 @@ class User(BaseModel):
     id: int
     tg_id: str
     nickname: str = None
+    is_admin: bool = False
     create_date: datetime
     wallet: 'Wallet'
     sended_transactions: list['Transaction'] = None
@@ -51,6 +52,7 @@ class UserUpdate(BaseModel):
 class UserCreate(BaseModel):
     tg_id: int
     nickname: str = None
+    is_admin: bool = False
 
 
 class CreateTransaction(BaseModel):

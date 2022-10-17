@@ -9,6 +9,7 @@ class User(db.Entity):
     id = PrimaryKey(int, auto=True)
     tg_id = Required(int, sql_type="BIGINT", unique=True, size=64)
     nickname = Optional(str)
+    is_admin = Required(bool, default=False)
     create_date = Required(datetime, default=datetime.now())
     wallet = Required('Wallet')
     sended_transactions = Set('Transaction', reverse='sender')
