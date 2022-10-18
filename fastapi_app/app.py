@@ -43,7 +43,8 @@ def get_all_users(current_user: schemas.Admin = Depends(get_current_user)) -> di
 
 
 @api.get('/get_info_by_user/{user_id}')
-def get_info_about_user(user_id: int = Path(), current_user: schemas.Admin = Depends(get_current_user)) -> dict:
+def get_info_about_user(user_id: int = Path(),
+                        current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """Информация по пользователю по его id"""
     try:
         user_id = admins_crud.get_user_info(user_id)
@@ -70,7 +71,8 @@ def update_user(user: schemas.UserUpdate = Body(),
 
 
 @api.delete('/user/{user_id}')
-def delete_user(user_id: int = Path(), current_user: schemas.Admin = Depends(get_current_user)) -> dict:
+def delete_user(user_id: int = Path(),
+                current_user: schemas.Admin = Depends(get_current_user)) -> dict:
     """
     Удалeние пользователя
     :param user_id:
@@ -97,7 +99,8 @@ def get_total_balance(current_user: schemas.Admin = Depends(get_current_user)) -
 
 # ОБРАБОТЧИКИ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ И АДМИНИСТРАТОРОВ
 @api.get('/get_user_by_tg/{tg_id}')
-def get_user_by_tg(tg_id: int = Path(), secret_key: str = Header()) -> dict:
+def get_user_by_tg(tg_id: int = Path(),
+                   secret_key: str = Header()) -> dict:
     """Информация по пользователю по его tg_id"""
     if secret_key == SECRET_HEADER:
         try:
@@ -113,7 +116,8 @@ def get_user_by_tg(tg_id: int = Path(), secret_key: str = Header()) -> dict:
 
 
 @api.post("/user/create")
-def user_create(user: schemas.UserCreate = Body(), secret_key: str = Header()) -> dict:
+def user_create(user: schemas.UserCreate = Body(),
+                secret_key: str = Header()) -> dict:
     """Создание нового пользователя"""
     if secret_key == SECRET_HEADER:
         try:
@@ -127,7 +131,8 @@ def user_create(user: schemas.UserCreate = Body(), secret_key: str = Header()) -
 
 
 @api.get("/get_user_balance/{tg_id}")
-def user_balance_getter(tg_id: int = Path(), secret_key: str = Header()) -> dict:
+def user_balance_getter(tg_id: int = Path(),
+                        secret_key: str = Header()) -> dict:
     """
     Получение баланса пользователя по его tg_id
     """
@@ -141,7 +146,8 @@ def user_balance_getter(tg_id: int = Path(), secret_key: str = Header()) -> dict
 
 
 @api.post("/create_transaction")
-def create_transaction(trans_details: schemas.CreateTransaction, secret_key: str = Header()) -> dict:
+def create_transaction(trans_details: schemas.CreateTransaction,
+                       secret_key: str = Header()) -> dict:
     if secret_key == SECRET_HEADER:
         try:
             transaction = users_crud.create_transaction(

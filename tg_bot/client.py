@@ -1,23 +1,27 @@
-from tg_bot.tg_bot_config import API_URL, SECRET_HEADER,  ADMIN_TOKEN, ADMIN_PASSWORD, ADMIN_ID
+from tg_bot.tg_bot_config import API_URL, SECRET_HEADER, ADMIN_PASSWORD, ADMIN_ID
 import requests
 from fastapi_app import schemas
 
 
 form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
-# когда мы отправляем данные в виде формы,
-# то присваиваем значения параметрам через равно,
-# а перечисляем их через амперсанд
-payload = f'username=admin&password={ADMIN_PASSWORD}' # TODO отредактировать логин админа
-raw_token = requests.post(API_URL+"/token",
+"""когда мы отправляем данные в виде формы,
+то присваиваем значения параметрам через равно,
+а перечисляем их через амперсанд"""
+
+payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
+raw_token = requests.post(API_URL + "/token",
                           headers=form_headers,
                           data=payload)
-token = raw_token.json()     # получаем словарь из ответа сервера
-session = requests.Session()   # создаем экземпляр сессии
-# добавляем хедеры с токеном авторизации, благодаря чему API будет понимать кто мы и возвращать нужные нам ответы
-session.headers = {
-      'accept': 'application/json',
-      'Authorization': "Bearer " + token['access_token']
+token = raw_token.json()
+admin_session = requests.Session()
+admin_session.headers = {
+    'accept': 'application/json',
+    'Authorization': "Bearer " + token['access_token']
+}
+user_session = requests.Session()
+user_session.headers = {
+    "secret-key": SECRET_HEADER
 }
 
 
@@ -28,8 +32,7 @@ def get_user_by_tg(tg_id: int):
     :return server response(dict):
     """
     try:
-        response = requests.get(f'{API_URL}/get_user_by_tg/{tg_id}',
-                                headers={"secret-key": SECRET_HEADER}).json()
+        response = user_session.get(f'{API_URL}/get_user_by_tg/{tg_id}').json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -43,9 +46,8 @@ def create_user(user: dict):
     """
     user = schemas.UserCreate.validate(user)
     try:
-        response = requests.post(f'{API_URL}/user/create',
-                                 data=user.json(),
-                                 headers={"secret-key": SECRET_HEADER}).json()
+        response = user_session.post(f'{API_URL}/user/create',
+                                     data=user.json()).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -59,9 +61,8 @@ def create_transaction(transaction_info: dict) -> dict:
     """
     try:
         transaction_info = schemas.CreateTransaction.validate(transaction_info)
-        response = requests.post(f'{API_URL}/create_transaction',
-                                 data=transaction_info.json(),
-                                 headers={"secret-key": SECRET_HEADER}).json()
+        response = user_session.post(f'{API_URL}/create_transaction',
+                                     data=transaction_info.json()).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -74,8 +75,7 @@ def get_user_transactions(tg_id: int) -> dict:
     :return server response(dict):
     """
     try:
-        response = requests.get(f"{API_URL}/get_user_transactions/{tg_id}",
-                                headers={"secret-key": SECRET_HEADER}).json()
+        response = user_session.get(f"{API_URL}/get_user_transactions/{tg_id}").json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -88,8 +88,7 @@ def get_user_balance(tg_id: int) -> dict:
     :return server response(dict):
     """
     try:
-        response = requests.get(f"{API_URL}/get_user_balance/{tg_id}",
-                                headers={"secret-key": SECRET_HEADER}).json()
+        response = user_session.get(f"{API_URL}/get_user_balance/{tg_id}").json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -101,7 +100,7 @@ def get_users():
     :return server response(list):
     """
     try:
-        response = session.get(f"{API_URL}/users").json()
+        response = admin_session.get(f"{API_URL}/users").json()
     except requests.exceptions.ConnectionError as _ex:
         raise _ex
     return response
@@ -114,7 +113,7 @@ def get_info_about_user(user_id: int):
     :return server response(dict):
     """
     try:
-        response = session.get(f'{API_URL}/get_info_by_user/{user_id}').json()
+        response = admin_session.get(f'{API_URL}/get_info_by_user/{user_id}').json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -128,7 +127,7 @@ def update_user(user: schemas.UserUpdate) -> str | dict:
     """
     try:
         user = schemas.UserUpdate.validate(user)
-        response = session.put(f'{API_URL}/user/{user.id}', data=user.json())
+        response = admin_session.put(f'{API_URL}/user/{user.id}', data=user.json())
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     else:
@@ -145,7 +144,7 @@ def delete_user(user_id: int) -> dict:
     :return server response(dict):
     """
     try:
-        response = session.delete(f'{API_URL}/user/{user_id}').json()
+        response = admin_session.delete(f'{API_URL}/user/{user_id}').json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -157,7 +156,7 @@ def total_balance() -> dict:
     :return server response(dict):
     """
     try:
-        response = session.get(f"{API_URL}/get_total_balance").json()
+        response = admin_session.get(f"{API_URL}/get_total_balance").json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
