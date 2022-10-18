@@ -8,7 +8,7 @@ form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 # когда мы отправляем данные в виде формы,
 # то присваиваем значения параметрам через равно,
 # а перечисляем их через амперсанд
-payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
+payload = f'username=admin&password={ADMIN_PASSWORD}' # TODO отредактировать логин админа
 raw_token = requests.post(API_URL+"/token",
                           headers=form_headers,
                           data=payload)
