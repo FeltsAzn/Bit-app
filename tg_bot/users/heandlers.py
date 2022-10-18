@@ -1,5 +1,6 @@
 from tg_bot.tg_bot_config import ADMIN_ID
 from tg_bot.users.fsm_transaction import *
+from tg_bot.start_bot import bot
 
 
 @bot.message_handler(commands=["start"])
@@ -164,4 +165,6 @@ def history(message):
         bot.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
 
 
-
+@bot.message_handler(regexp="Мой id")
+def get_id(message):
+    bot.send_message(chat_id=message.chat.id, text=message.from_user.id)
