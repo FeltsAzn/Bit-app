@@ -1,14 +1,9 @@
 from tg_bot.tg_bot_config import API_URL, SECRET_HEADER, ADMIN_PASSWORD, ADMIN_ID
 import requests
-from fastapi_app import schemas
+from tg_bot import tg_schemas
 
 
 form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-
-"""когда мы отправляем данные в виде формы,
-то присваиваем значения параметрам через равно,
-а перечисляем их через амперсанд"""
-
 payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
 raw_token = requests.post(API_URL + "/token",
                           headers=form_headers,
@@ -44,7 +39,7 @@ def create_user(user: dict):
     :param user:
     :return server response(dict):
     """
-    user = schemas.UserCreate.validate(user)
+    user = tg_schemas.UserCreate.validate(user)
     try:
         response = user_session.post(f'{API_URL}/user/create',
                                      data=user.json()).json()
@@ -60,7 +55,7 @@ def create_transaction(transaction_info: dict) -> dict:
     :return server response(dict):
     """
     try:
-        transaction_info = schemas.CreateTransaction.validate(transaction_info)
+        transaction_info = tg_schemas.CreateTransaction.validate(transaction_info)
         response = user_session.post(f'{API_URL}/create_transaction',
                                      data=transaction_info.json()).json()
     except requests.exceptions.ConnectionError as _ex:
@@ -119,21 +114,21 @@ def get_info_about_user(user_id: int):
     return response
 
 
-def update_user(user: schemas.UserUpdate) -> str | dict:
+def update_user(user: tg_schemas.UserUpdate) -> str | dict:
     """
     Обновление информации пользователя (для админа)
     :param user:
     :return server response(dict | str) :
     """
     try:
-        user = schemas.UserUpdate.validate(user)
+        user = tg_schemas.UserUpdate.validate(user)
         response = admin_session.put(f'{API_URL}/user/{user.id}', data=user.json())
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     else:
         try:
             return response.json()
-        except Exception as ex:
+        except Exception:
             return response.text
 
 
