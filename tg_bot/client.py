@@ -1,6 +1,7 @@
 from tg_bot.tg_bot_config import API_URL, SECRET_HEADER
 import requests
 from fastapi_app import schemas
+from tg_bot.tg_bot_config import ADMIN_TOKEN
 
 users_token_cache = {}
 
@@ -11,7 +12,8 @@ def get_users():
     :return server response(list):
     """
     try:
-        response = requests.get(f"{API_URL}/users").json()
+        response = requests.get(f"{API_URL}/users",
+                                headers={"Authorization": f'Bearer {ADMIN_TOKEN}'}).json()
     except requests.exceptions.ConnectionError as _ex:
         raise _ex
     return response
@@ -24,7 +26,8 @@ def get_info_about_user(user_id: int):
     :return server response(dict):
     """
     try:
-        response = requests.get(f'{API_URL}/get_info_by_user/{user_id}').json()
+        response = requests.get(f'{API_URL}/get_info_by_user/{user_id}',
+                                headers={"Authorization": f'Bearer {ADMIN_TOKEN}'}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -68,7 +71,8 @@ def update_user(user: schemas.UserUpdate) -> str | dict:
     """
     try:
         user = schemas.UserUpdate.validate(user)
-        response = requests.put(f'{API_URL}/user/{user.id}', data=user.json())
+        response = requests.put(f'{API_URL}/user/{user.id}', data=user.json(),
+                                headers={"Authorization": f'Bearer {ADMIN_TOKEN}'})
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     else:
@@ -85,7 +89,8 @@ def delete_user(user_id: int) -> dict:
     :return server response(dict):
     """
     try:
-        response = requests.delete(f'{API_URL}/user/{user_id}').json()
+        response = requests.delete(f'{API_URL}/user/{user_id}',
+                                   headers={"Authorization": f'Bearer {ADMIN_TOKEN}'}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response
@@ -111,7 +116,8 @@ def total_balance() -> dict:
     :return server response(dict):
     """
     try:
-        response = requests.get(f"{API_URL}/get_total_balance").json()
+        response = requests.get(f"{API_URL}/get_total_balance",
+                                headers={"Authorization": f'Bearer {ADMIN_TOKEN}'}).json()
     except requests.exceptions.ConnectionError as _ex:
         return {"server_error": "the server is not responding"}
     return response

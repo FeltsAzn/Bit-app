@@ -65,11 +65,11 @@ def get_all_user() -> list[dict]:
 def get_wallet_info(wallet: schemas.Wallet) -> dict:
     """Возвращается словарь с информацией по кошельку для передачи в информацию по пользователю"""
     wallet = update_wallet_balance(wallet)
-    return {"id": wallet.id if wallet.id else None,
+    return {"id": wallet.id,
             "user": wallet.user if wallet.user else None,
-            "balance": wallet.balance if wallet.balance else None,
-            "private_key": wallet.private_key if wallet.private_key else None,
-            "address": wallet.address if wallet.address else None,
+            "balance": wallet.balance,
+            "private_key": wallet.private_key,
+            "address": wallet.address,
             "sended_transactions": wallet.sended_transactions if wallet.sended_transactions else [],
             "received_transactions": wallet.received_transactions if wallet.received_transactions else []}
 
@@ -80,12 +80,11 @@ def get_user_info(user_id: int) -> dict:
     user = get_user(user_id)
     return {"id": user.id,
             "tg_id": user.tg_id,
-            "nick": user.nickname if user.nickname else None,
+            "nickname": user.nickname if user.nickname else None,
             "create_date": user.create_date,
+            "is_admin": user.is_admin,
             # получаем все данные по кошельку
-            "wallet": get_wallet_info(user.wallet),
-            "sended_transactions": user.sended_transactions if user.sended_transactions else [],
-            "received_transactions": user.received_transactions if user.received_transactions else []}
+            "wallet": get_wallet_info(user.wallet)}
 
 
 @db_session
