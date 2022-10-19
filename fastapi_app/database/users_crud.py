@@ -1,7 +1,7 @@
-from fastapi_app import schemas
+import schemas
 import bit
-from fastapi_app.database.db import *
-from fastapi_app.database import admins_crud
+from .db import *
+from . import admins_crud
 
 
 @db_session

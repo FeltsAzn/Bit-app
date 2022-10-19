@@ -1,12 +1,15 @@
-from fastapi_app.database import users_crud, admins_crud
-from fastapi_app.auth import get_current_user, authenticate_user, create_access_token
-from fastapi_app import schemas
 from fastapi.params import Depends
 from pony.orm.core import ERDiagramError, TransactionIntegrityError
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import FastAPI, Body, Path, HTTPException, status, Header
-from fastapi_app.fastapi_config import SECRET_HEADER
+from database import users_crud, admins_crud
+from auth import get_current_user, authenticate_user, create_access_token
+import schemas
+from fastapi_config import SECRET_HEADER
+import sys
 
+
+sys.path.append('.')
 api = FastAPI()
 
 

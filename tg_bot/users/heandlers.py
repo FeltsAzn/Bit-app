@@ -1,6 +1,5 @@
-from tg_bot.tg_bot_config import ADMIN_ID
-from tg_bot.users.fsm_transaction import *
-from tg_bot.start_bot import bot
+from tg_bot_config import ADMIN_ID
+from users.fsm_transaction import *
 
 
 @bot.message_handler(commands=["start"])

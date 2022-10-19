@@ -1,6 +1,6 @@
 import telebot
 from http.client import HTTPException
-from tg_bot.start_bot import bot
+from start_bot import bot
 
 
 def connection_checker(response):

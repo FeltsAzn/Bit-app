@@ -1,6 +1,6 @@
-from fastapi_app import schemas
+import schemas
 import bit
-from fastapi_app.database.db import *
+from .db import *
 
 
 @db_session

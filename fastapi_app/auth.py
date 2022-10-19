@@ -2,8 +2,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi_app.fastapi_config import USERNAME, PASSWORD, SECRET_KEY, ALGORITHM
-from fastapi_app.schemas import UserInDB, TokenData
+from fastapi_config import USERNAME, PASSWORD, SECRET_KEY, ALGORITHM
+from schemas import UserInDB, TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

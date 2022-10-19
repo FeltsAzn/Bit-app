@@ -1,23 +1,28 @@
-from tg_bot.tg_bot_config import API_URL, SECRET_HEADER, ADMIN_PASSWORD, ADMIN_ID
+from tg_bot_config import API_URL, SECRET_HEADER, ADMIN_PASSWORD, ADMIN_ID
 import requests
-from tg_bot import tg_schemas
+import tg_schemas
 
 
-form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
-raw_token = requests.post(API_URL + "/token",
-                          headers=form_headers,
-                          data=payload)
-token = raw_token.json()
-admin_session = requests.Session()
-admin_session.headers = {
-    'accept': 'application/json',
-    'Authorization': "Bearer " + token['access_token']
-}
-user_session = requests.Session()
-user_session.headers = {
-    "secret-key": SECRET_HEADER
-}
+def request():
+    form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
+    raw_token = requests.post(API_URL + "/token",
+                              headers=form_headers,
+                              data=payload)
+    token = raw_token.json()
+    admin_session = requests.Session()
+    admin_session.headers = {
+        'accept': 'application/json',
+        'Authorization': "Bearer " + token['access_token']
+    }
+    user_session = requests.Session()
+    user_session.headers = {
+        "secret-key": SECRET_HEADER
+    }
+    return user_session, admin_session
+
+
+user_session, admin_session = request()
 
 
 def get_user_by_tg(tg_id: int):

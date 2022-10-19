@@ -1,9 +1,9 @@
-import telebot  # telebot
-from tg_bot.start_bot import bot
+import telebot
+from start_bot import bot
 from http.client import HTTPException
 from telebot.handler_backends import State, StatesGroup
-from .. import client
-from tg_bot.exception_handler import connection_checker, exception_info
+import client
+from exception_handler import connection_checker, exception_info
 
 
 transaction_cache = dict()

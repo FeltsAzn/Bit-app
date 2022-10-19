@@ -1,6 +1,8 @@
-from tg_bot.loader import bot
-from tg_bot import admin
-from tg_bot import users
+from loader import bot
+import admin
+import users
+import sys
+sys.path.append(".")
 
 
 def start():
