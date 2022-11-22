@@ -215,4 +215,3 @@ docker run -d <image name>
 Written as part of a project based on the course "[Quickly write API in Python with FastAPI](https://stepik.org/course/119770/)"
 
 ***With own implementations of most handlers, error handlers and application template.***
-
