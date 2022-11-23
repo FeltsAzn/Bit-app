@@ -5,7 +5,7 @@ try:
     db.bind(provider='postgres',
             user='postgres',
             password='felts',
-            host='localhost',
+            host='postgres',
             database='BTC_app_database')
     db.generate_mapping(create_tables=True)
 except Exception as ex:

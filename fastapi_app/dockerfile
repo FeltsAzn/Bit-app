@@ -1,6 +1,6 @@
 FROM python:3.10.6-slim
 WORKDIR /api
-COPY ../requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 COPY . .
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir -r requirements.txt

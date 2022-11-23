@@ -1,18 +1,25 @@
 services:
   fastapi:
-    image: fastapi
-    container_name: fastapi_app
+    image: fastapi_course
+    container_name: fastapi_course_con
     ports:
     - "8000:8000"
     build:
       context: ./fastapi_app
       dockerfile: dockerfile
+    depends_on:
+      - postgres
 
   telegram_bot:
-    image: bot
-    container_name: bot_app
+    image: bot_course
+    container_name: bot_app_con
     build:
       context: ./tg_bot
       dockerfile: dockerfile
     depends_on:
       - fastapi
+
+  postgres:
+    image: postgres:14.6-alpine
+    container_name: postgres_db
+
