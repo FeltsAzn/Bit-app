@@ -8,7 +8,7 @@ services:
       context: /home/tim/PycharmProjects/FastAPI-curse/fastapi_app/
       dockerfile: dockerfile
     depends_on:
-      - postgres
+      - db_postgres
 
   telegram_bot:
     image: bot_course
@@ -19,10 +19,12 @@ services:
     depends_on:
       - fastapi
 
-  postgres:
+  db_postgres:
     image: postgres:14.6-alpine
     container_name: postgres_db
     environment:
       POSTGRES_DB: BTC_app_database
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: felts
+    volumes:
+      - /home/postgres/data

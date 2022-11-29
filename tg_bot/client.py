@@ -6,7 +6,7 @@ import tg_schemas
 
 
 def request():
-    time.sleep(5)
+    time.sleep(3) # таймаут для поднятия контейнера фастапи
     form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
     raw_token = requests.post(API_URL + "/token",
