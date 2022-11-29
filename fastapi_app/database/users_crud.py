@@ -1,4 +1,4 @@
-from fastapi_app import schemas
+import schemas
 import bit
 from .db import *
 from . import admins_crud

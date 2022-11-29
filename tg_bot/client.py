@@ -1,9 +1,12 @@
+import time
+
 from tg_bot_config import API_URL, SECRET_HEADER, ADMIN_PASSWORD, ADMIN_ID
 import requests
 import tg_schemas
 
 
 def request():
+    time.sleep(5)
     form_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     payload = f'username={ADMIN_ID[0]}&password={ADMIN_PASSWORD}'
     raw_token = requests.post(API_URL + "/token",
